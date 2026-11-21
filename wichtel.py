@@ -38,11 +38,15 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;backg
 #bar button.off{opacity:.35}
 #bar button.f{border-color:#5ec2ff;box-shadow:0 0 0 2px #5ec2ff55}
 #bar .sep{width:10px}
-#ov{position:absolute;inset:0;background:rgba(14,9,26,.82);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;text-align:center;overflow:auto}
+#ov>:first-child{margin-top:auto}
+#ov>:last-child{margin-bottom:auto}
+#ov{position:absolute;inset:0;background:rgba(14,9,26,.82);display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:14px;text-align:center;overflow:auto}
 #ov h1{font-size:clamp(24px,5vmin,44px);color:#ffd45a}
 #ov p{max-width:640px;font-size:clamp(13px,2.4vmin,20px);color:#d8d2f2;line-height:1.35}
 #ov .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-#ov .grid{display:grid;grid-template-columns:repeat(10,minmax(42px,62px));gap:8px}
+#ov .grid{display:grid;grid-template-columns:repeat(10,minmax(40px,62px));gap:clamp(4px,.9vmin,8px)}
+#ov .grid .mb,#ov .grid .lock{padding:clamp(2px,.6vmin,6px) 2px;border-radius:10px;font-size:clamp(11px,2.1vmin,18px);line-height:1.15}
+#ov .grid .mb small{font-size:.62em}
 .mb{background:#2f2560;color:#fff;border:3px solid transparent;border-radius:12px;padding:10px 16px;font-size:clamp(14px,2.6vmin,22px);font-weight:700;cursor:pointer}
 .mb small{display:block;font-size:.7em;color:#ffd45a;font-weight:600}
 .mb.f{border-color:#5ec2ff;background:#40318a}
@@ -314,7 +318,7 @@ function loadLevel(n){lv=n;L=LV[n];T.fill(0);for(const r of L.r){const t=r[4]===
  paintAll();setTheme(Math.floor(n/4));bombs=[];tramps=(L.T||[]).map(p=>({x:p[0],y:p[1],cd:0}));bub=[];sh=0;ws=[];ptc=[];tick=0;spawned=0;saved=0;lost=0;over=null;paused=false;speed=1;idle=0;sig=0;cnt=Object.assign({},L.sk);sel=ORDER.find(s=>L.sk[s])||'dig';
  cx=Math.min(W-1,Math.max(0,L.E[0]+30));cy=Math.max(10,L.E[1]+30);ov.style.display='none';zone='field';mode='play';mkBar();hud();say(L.h)}
 const ov=$('#ov');
-function focusMb(i){mbs.forEach(x=>x.classList.remove('f'));mbi=Math.max(0,Math.min(mbs.length-1,i));if(mbs[mbi]){const b=mbs[mbi];b.classList.add('f');const r=b.getBoundingClientRect(),o=ov.getBoundingClientRect();if(r.top<o.top)ov.scrollTop-=o.top-r.top+8;else if(r.bottom>o.bottom)ov.scrollTop+=r.bottom-o.bottom+8}}
+function focusMb(i){mbs.forEach(x=>x.classList.remove('f'));mbi=Math.max(0,Math.min(mbs.length-1,i));if(mbs[mbi]){const b=mbs[mbi];b.classList.add('f');const r=b.getBoundingClientRect(),o=ov.getBoundingClientRect();if(r.top<o.top+70)ov.scrollTop-=o.top+70-r.top;else if(r.bottom>o.bottom-24)ov.scrollTop+=r.bottom-o.bottom+24}}
 function showOv(title,msg,items,extra,focusIdx){mode=mode==='play'||mode==='pause'?'pause':'main';ov.innerHTML='';const h=el('h1');h.textContent=title;ov.append(h);
  if(msg){const p=el('p');p.textContent=msg;ov.append(p)}if(extra)ov.append(extra);
  const row=el('div','row');for(const it of items){const b=el('button','mb');b.textContent=it[0];b.onclick=()=>{ui();it[1]()};row.append(b)}ov.append(row);
@@ -365,8 +369,8 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.altKey||e.metaKey)return;const k=
   else if(k==='Enter'||k===' '){const x=btns[barIdx];if(x){x.f();if(!x.ctl){zone='field';updBar()}}}
   else used=false}
  else{
-  if(k==='ArrowDown'||k==='s'){if(cy>=H-3){goBar()}else held[k]=held[k]||Date.now()}
-  else if(['ArrowLeft','ArrowRight','ArrowUp','a','d','w'].includes(k)){held[k]=held[k]||Date.now()}
+  if(k==='ArrowDown'||k==='s'){if(cy>=H-3){goBar()}else{if(!held[k])nudge(0,1);held[k]=held[k]||Date.now()}}
+  else if(['ArrowLeft','ArrowRight','ArrowUp','a','d','w'].includes(k)){if(!held[k])nudge(k==='ArrowRight'||k==='d'?1:k==='ArrowLeft'||k==='a'?-1:0,k==='ArrowUp'||k==='w'?-1:0);held[k]=held[k]||Date.now()}
   else if(k==='Enter'){applyAt(cx,cy,11)}
   else if(k===' '||k==='p'){paused=!paused;say(paused?'Pause':'Weiter')}
   else if(k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack'){if(L&&!over)pauseMenu()}
@@ -382,8 +386,9 @@ function toLog(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r
 cv.addEventListener('pointerdown',e=>{ui();const[x,y]=toLog(e);cx=x;cy=y;if(zone==='bar')zone='field';mouseMode=true;applyAt(x,y,e.pointerType==='touch'?13:10);e.preventDefault()});
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){const[x,y]=toLog(e);cx=x;cy=y;mouseMode=true}});
 let last=0,acc=0,hold0={};
+function nudge(a,b){mouseMode=false;cx=Math.max(0,Math.min(W-1,cx+a));cy=Math.max(0,Math.min(H-1,cy+b))}
 function moveCur(dt){let dx=0,dy=0,now=Date.now();
- const sp=k=>{const t=held[k];if(!t)return 0;return(now-t>450?170:85)};
+ const sp=k=>{const t=held[k];if(!t)return 0;const e=now-t;return e<300?30:e<800?75:e<1500?130:190};
  dx+=sp('ArrowRight')+sp('d')-sp('ArrowLeft')-sp('a');dy+=sp('ArrowDown')+sp('s')-sp('ArrowUp')-sp('w');
  if(zone==='field'&&(held.ArrowDown||held.s)&&cy>=H-2&&Date.now()-(held.ArrowDown||held.s)>250){delete held.ArrowDown;delete held.s;goBar();return}
  if(dx||dy){mouseMode=false;cx=Math.max(0,Math.min(W-1,cx+dx*dt/1000));cy=Math.max(0,Math.min(H-1,cy+dy*dt/1000))}}
@@ -428,7 +433,7 @@ function frame(t){const dt=Math.min(100,t-last);last=t;moveCur(dt);
  render(t);requestAnimationFrame(frame)}
 function fit(){const st=$('#stage'),w=st.clientWidth,h=st.clientHeight;let cw=w,ch=w/2;if(ch>h){ch=h;cw=h*2}cv.style.width=Math.floor(cw)+'px';cv.style.height=Math.floor(ch)+'px'}
 addEventListener('resize',fit);fit();try{new ResizeObserver(fit).observe($('#stage'))}catch(e){}
-window.WG={add:l=>{LV.push(l);return LV.length-1},tool:(s,x,y)=>useTool(s,x,y),step:n=>{for(let i=0;i<(n||1);i++)step()},load:loadLevel,apply:(s,i)=>doApply(ws[i],s),ws:()=>ws.map(w=>({id:w.id,hat:w.hat,x:w.x,y:w.y,st:w.st,dir:w.dir,fd:w.fd,climber:w.climber,floater:w.floater})),st:()=>({bombs:bombs.length,tramps:tramps.length,tick,spawned,saved,lost,over,cnt:Object.assign({},cnt),zone,sel,lv}),n:LV.length,menu:mainMenu};
+window.WG={add:l=>{LV.push(l);return LV.length-1},tool:(s,x,y)=>useTool(s,x,y),step:n=>{for(let i=0;i<(n||1);i++)step()},load:loadLevel,apply:(s,i)=>doApply(ws[i],s),ws:()=>ws.map(w=>({id:w.id,hat:w.hat,x:w.x,y:w.y,st:w.st,dir:w.dir,fd:w.fd,climber:w.climber,floater:w.floater})),st:()=>({cx:Math.round(cx*10)/10,cy:Math.round(cy*10)/10,bombs:bombs.length,tramps:tramps.length,tick,spawned,saved,lost,over,cnt:Object.assign({},cnt),zone,sel,lv}),n:LV.length,menu:mainMenu};
 setTheme(0);mainMenu();requestAnimationFrame(frame);
 </script></body></html>
 """
