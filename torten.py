@@ -39,7 +39,9 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;backg
 #bar button.go{background:#c0392b}
 #bar button.f{outline:4px solid #5ec2ff;outline-offset:1px}
 #bar .sep{width:10px}
-#ov{position:absolute;inset:0;background:rgba(14,9,26,.82);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;text-align:center;overflow:auto}
+#ov>:first-child{margin-top:auto}
+#ov>:last-child{margin-bottom:auto}
+#ov{position:absolute;inset:0;background:rgba(14,9,26,.82);display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:14px;text-align:center;overflow:auto}
 #ov h1{font-size:clamp(24px,5vmin,44px);color:#ffd45a}
 #ov p{max-width:660px;font-size:clamp(13px,2.4vmin,20px);color:#d8d2f2;line-height:1.35}
 #ov .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:720px}
@@ -138,7 +140,7 @@ function newGame(){const kind=cfg.map===0?1+Math.floor(rnd()*5):cfg.map;genMap(k
  for(let t=0;t<2;t++){let k=0;for(let i=0;i<3;i++){let x=slots[t][i]+Math.floor(rnd()*7-3);if(kind===5&&Math.abs(x-(t?262:46))<=6)x+=t?-12:12;let y=surf(x);for(let d=0;y<0&&d<40;d++){x+=t?-3:3;y=surf(x)}if(y<0)y=60;
   ws[t].push({t,n:NAMES[t][i],x,y,ap:100,st:'stand',dir:t?-1:1,vx:0,vy:0,fx:x,fy:y,fd:0,t0:0})}}
  G={ws,team:1,cur:0,next:[0,0],phase:'aim',st:0,wind:0,ammo:[[99,3,4],[99,3,4]],ang:[55,125],pow:[62,62],wp:[0,0],proj:[],over:null,turns:0,kind,cpuT:0,cpuPlan:null,winner:-1};
- ptc=[];bub=[];sh=0;tick=0;paused=false;speed=1;mode='play';zone='play';ov.style.display='none';mkBar();nextTurn(true)}
+ ptc=[];bub=[];sh=0;tick=0;paused=false;speed=1;mode='play';zone='play';ov.style.display='none';pushTrap();mkBar();nextTurn(true)}
 function alive(t){return G.ws[t].filter(w=>w.st!=='out')}
 function cur(){return G.ws[G.team][G.cur]}
 function isCpu(t){return cfg.cpu===2||(cfg.cpu===1&&t===1)}
@@ -213,6 +215,14 @@ function updBar(){if(!G)return;const t=G.team;btns.forEach((b,i)=>{b.classList.t
 function barFocus(i){bi=Math.max(0,Math.min(bbs.length-1,i));bbs.forEach((b,k)=>b.classList.toggle('f',zone==='bar'&&k===bi))}
 function enterBar(){if(!bbs.length||!G||G.over)return;zone='bar';held={};barFocus(G.phase==='aim'&&!isCpu(G.team)?G.wp[G.team]:3);say('Untere Leiste: Links/Rechts wählen, OK bestätigt, Zurück geht zurück zum Spiel')}
 function leaveBar(){zone='play';barFocus(0);bbs.forEach(b=>b.classList.remove('f'))}
+let trap=0,bk=0;
+function pushTrap(){if(trap)return;try{history.pushState({td:1},'');trap=1}catch(e){}}
+function closeGame(){try{if(window.parent!==window){window.parent.history.back();return}}catch(e){}if(history.length>1)history.back();else location.href='/ui/'}
+function resume(){ov.style.display='none';zone='play';paused=false;leaveBar()}
+addEventListener('popstate',()=>{if(!trap)return;trap=0;
+ if(mode==='play'&&G){pushTrap();if(Date.now()-bk<350)return;
+  if(zone==='menu'){if(paused)resume();else if(G.over)mainMenu()}else if(zone==='bar')leaveBar();else enterBar()}
+ else closeGame()});
 function ui(){if(AC&&AC.state==='suspended')try{AC.resume()}catch(e){}}
 function focusMb(i){mbs.forEach(x=>x.classList.remove('f'));mbi=Math.max(0,Math.min(mbs.length-1,i));if(mbs[mbi]){const b=mbs[mbi];b.classList.add('f');const r=b.getBoundingClientRect(),o=ov.getBoundingClientRect();if(r.top<o.top)ov.scrollTop-=o.top-r.top+8;else if(r.bottom>o.bottom)ov.scrollTop+=r.bottom-o.bottom+8}}
 function showOv(title,msg,items,focusIdx){ov.innerHTML='';const h=el('h1');h.textContent=title;ov.append(h);
@@ -223,7 +233,7 @@ const LVN=['Leicht','Mittel','Schwer'];
 function mainMenu(){mode='main';paused=false;if(G&&!G.over)G.over=1;G=null;bar.innerHTML='';btns=[];$('#ht').textContent='Torten-Duell';$('#hs').textContent='';
  showOv('🎂 Torten-Duell','Zwei Wichtel-Trupps werfen abwechselnd Torten. Wer getroffen wird, verliert Appetit. Ist der Appetit weg, ist der Wichtel satt. Sind alle satt, hat der Trupp verloren. Fernbedienung: Links/Rechts Winkel, Hoch/Runter Kraft, OK wirft. Die Zurück-Taste öffnet die untere Leiste (Torte wählen, Pause). Touch: vom Wichtel wegziehen und loslassen.',
   [['Gegen Computer: '+LVN[cfg.lvl],()=>{cfg.cpu=1;newGame()}],['Zu zweit (abwechselnd)',()=>{cfg.cpu=0;newGame()}],['Schwierigkeit: '+LVN[cfg.lvl],()=>{cfg.lvl=(cfg.lvl+1)%3;mainMenu()}],['Karte: '+MAPN[cfg.map],()=>{cfg.map=(cfg.map+1)%MAPN.length;mainMenu()}],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();mainMenu()}],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}]])}
-function pauseMenu(){if(!G||G.over||zone==='menu')return;bbs.forEach(b=>b.classList.remove('f'));paused=true;showOv('Pause','',[['▶ Weiter',()=>{ov.style.display='none';zone='play';paused=false;leaveBar()}],['🔄 Neue Karte',newGame],['☰ Hauptmenü',mainMenu],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();pauseMenu()}]])}
+function pauseMenu(){if(!G||G.over||zone==='menu')return;bbs.forEach(b=>b.classList.remove('f'));paused=true;showOv('Pause','',[['▶ Weiter',resume],['🔄 Neue Karte',newGame],['☰ Hauptmenü',mainMenu],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();pauseMenu()}]])}
 function navMenu(dir){if(!mbs.length)return;const cur_=mbs[mbi].getBoundingClientRect(),cxm=cur_.left+cur_.width/2,cym=cur_.top+cur_.height/2;let best=-1,bd=1e9;
  mbs.forEach((b,i)=>{if(i===mbi)return;const r=b.getBoundingClientRect(),x=r.left+r.width/2-cxm,y=r.top+r.height/2-cym;let pr,pe;
   if(dir==='ArrowRight'){pr=x;pe=Math.abs(y)}else if(dir==='ArrowLeft'){pr=-x;pe=Math.abs(y)}else if(dir==='ArrowDown'){pr=y;pe=Math.abs(x)}else{pr=-y;pe=Math.abs(x)}
@@ -231,11 +241,11 @@ function navMenu(dir){if(!mbs.length)return;const cur_=mbs[mbi].getBoundingClien
  if(best>=0)focusMb(best)}
 function myTurn(){return G&&!G.over&&G.phase==='aim'&&!isCpu(G.team)&&zone==='play'&&!paused}
 function cycleW(d){if(!myTurn())return;const t=G.team;let k=G.wp[t];for(let i=0;i<3;i++){k=(k+d+3)%3;if(G.ammo[t][k]>0)break}G.wp[t]=k;updBar();SFX.sel();say(WEAP[k].n)}
-addEventListener('keydown',e=>{if(e.ctrlKey||e.altKey||e.metaKey)return;const k=e.key;ui();let used=true;
+addEventListener('keydown',e=>{if(e.ctrlKey||e.altKey||e.metaKey)return;const k=e.key;ui();let used=true;if(k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')bk=Date.now();
  if(zone==='menu'){
   if(k.startsWith('Arrow'))navMenu(k);
   else if(k==='Enter'||k===' ')mbs[mbi]&&mbs[mbi].click();
-  else if((k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')&&paused){ov.style.display='none';zone='play';paused=false}
+  else if((k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')&&paused){resume()}
   else used=false}
  else{
   const BACK=k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack';

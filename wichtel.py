@@ -316,7 +316,7 @@ function say(t){const h=$('#hint');h.textContent=t;h.classList.add('on');hintT=D
 function hud(){$('#ht').innerHTML='Level '+(lv+1)+' · <b>'+L.n+'</b>';$('#hs').innerHTML='Draußen '+(L.cnt-spawned)+' · Unterwegs '+ws.filter(w=>w.st!=='dead'&&w.st!=='gone').length+' · Gerettet <b>'+saved+'/'+L.cnt+'</b> (Ziel '+L.need+')'}
 function loadLevel(n){lv=n;L=LV[n];T.fill(0);for(const r of L.r){const t=r[4]===undefined?1:r[4];for(let y=r[1];y<r[1]+r[3];y++)for(let x=r[0];x<r[0]+r[2];x++)if(x>=0&&x<W&&y>=0&&y<H)T[y*W+x]=t}
  paintAll();setTheme(Math.floor(n/4));bombs=[];tramps=(L.T||[]).map(p=>({x:p[0],y:p[1],cd:0}));bub=[];sh=0;ws=[];ptc=[];tick=0;spawned=0;saved=0;lost=0;over=null;paused=false;speed=1;idle=0;sig=0;cnt=Object.assign({},L.sk);sel=ORDER.find(s=>L.sk[s])||'dig';
- cx=Math.min(W-1,Math.max(0,L.E[0]+30));cy=Math.max(10,L.E[1]+30);ov.style.display='none';zone='field';mode='play';mkBar();hud();say(L.h)}
+ cx=Math.min(W-1,Math.max(0,L.E[0]+30));cy=Math.max(10,L.E[1]+30);ov.style.display='none';zone='field';mode='play';pushTrap();mkBar();hud();say(L.h)}
 const ov=$('#ov');
 function focusMb(i){mbs.forEach(x=>x.classList.remove('f'));mbi=Math.max(0,Math.min(mbs.length-1,i));if(mbs[mbi]){const b=mbs[mbi];b.classList.add('f');const r=b.getBoundingClientRect(),o=ov.getBoundingClientRect();if(r.top<o.top+70)ov.scrollTop-=o.top+70-r.top;else if(r.bottom>o.bottom-24)ov.scrollTop+=r.bottom-o.bottom+24}}
 function showOv(title,msg,items,extra,focusIdx){mode=mode==='play'||mode==='pause'?'pause':'main';ov.innerHTML='';const h=el('h1');h.textContent=title;ov.append(h);
@@ -332,7 +332,17 @@ function mainMenu(){mode='main';L=null;bar.innerHTML='';btns=[];$('#ht').textCon
  if(!first)fi=0;
  showOv('🧙 Wichtel-Rettung','Die Wichtel laufen von allein. Gib dem richtigen Wichtel eine Fähigkeit oder setze Bombe, Balken und Trampolin, damit alle zur Tür kommen. Fernbedienung: Pfeile bewegen das Fadenkreuz, OK wirkt, am unteren Rand erreichst du die Leiste. Touch: einfach antippen.',
   [['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}],['Alle Level: '+(allOn?'an':'aus'),()=>{allOn=!allOn;save();mainMenu()}]],g,fi)}
-function pauseMenu(){paused=true;showOv('Pause',L.n,[['▶ Weiter',()=>{ov.style.display='none';zone='field';mode='play';paused=false}],['🔄 Neu starten',()=>loadLevel(lv)],['☰ Level wählen',mainMenu],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();pauseMenu()}]])}
+let trap=0,bk=0;
+function pushTrap(){if(trap)return;try{history.pushState({wr:1},'');trap=1}catch(e){}}
+function closeGame(){try{if(window.parent!==window){window.parent.history.back();return}}catch(e){}if(history.length>1)history.back();else location.href='/ui/'}
+function resume(){ov.style.display='none';zone='field';mode='play';paused=false}
+addEventListener('popstate',()=>{if(!trap)return;trap=0;
+ if(L&&mode!=='main'){pushTrap();if(Date.now()-bk<350)return;
+  if(zone==='menu'){if(over)mainMenu();else if(mode==='pause')resume()}
+  else if(zone==='bar'){zone='field';updBar()}
+  else pauseMenu()}
+ else closeGame()});
+function pauseMenu(){paused=true;showOv('Pause',L.n,[['▶ Weiter',resume],['🔄 Neu starten',()=>loadLevel(lv)],['☰ Level wählen',mainMenu],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();pauseMenu()}]])}
 function endLv(win){over=win?'win':'lose';updBar();
  if(win){const k=saved===L.cnt?3:(saved>=Math.ceil(L.cnt*.8)?2:1);if(k>(prog[lv]||0)){prog[lv]=k;save()}SFX.win();for(let i=0;i<70;i++)ptc.push({x:Math.random()*W,y:-4-Math.random()*30,vx:(Math.random()-.5)*.8,vy:.3+Math.random()*.9,l:110,c:CONF[i%CONF.length]});
   const items=[];if(lv+1<LV.length)items.push(['▶ Nächstes Level',()=>loadLevel(lv+1)]);items.push(['🔄 Nochmal',()=>loadLevel(lv)],['☰ Level wählen',mainMenu]);
@@ -357,11 +367,11 @@ function navMenu(dir){if(!mbs.length)return;const cur=mbs[mbi].getBoundingClient
   if(dir==='ArrowRight'){pr=x;pe=Math.abs(y)}else if(dir==='ArrowLeft'){pr=-x;pe=Math.abs(y)}else if(dir==='ArrowDown'){pr=y;pe=Math.abs(x)}else{pr=-y;pe=Math.abs(x)}
   if(pr<=2)return;const d=pr+pe*2.2;if(d<bd){bd=d;best=i}});
  if(best>=0)focusMb(best)}
-addEventListener('keydown',e=>{if(e.ctrlKey||e.altKey||e.metaKey)return;const k=e.key;ui();let used=true;
+addEventListener('keydown',e=>{if(e.ctrlKey||e.altKey||e.metaKey)return;const k=e.key;ui();let used=true;if(k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')bk=Date.now();
  if(zone==='menu'){
   if(k.startsWith('Arrow'))navMenu(k);
   else if(k==='Enter'||k===' ')mbs[mbi]&&mbs[mbi].click();
-  else if((k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')&&mode==='pause'&&!over){ov.style.display='none';zone='field';mode='play';paused=false}
+  else if((k==='Escape'||k==='Backspace'||k==='GoBack'||k==='BrowserBack')&&mode==='pause'&&!over){resume()}
   else used=false}
  else if(zone==='bar'){
   if(k==='ArrowLeft'){barIdx=Math.max(0,barIdx-1);updBar()}else if(k==='ArrowRight'){barIdx=Math.min(btns.length-1,barIdx+1);updBar()}
