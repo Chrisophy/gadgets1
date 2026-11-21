@@ -6,7 +6,7 @@
 EXT_ID = 'wichtel'
 EXT_NAME = 'Wichtel-Rettung'
 EXT_DESCRIPTION = '🧙 Knobelspaß: Kleine Wichtel laufen von allein. Gib ihnen Aufgaben (graben, bauen, klettern, Schirm ...) und nutze Konfetti-Bomben, Trampoline, Balken und Portale. 100 Level, leuchtender Hintergrund, Fernbedienung und Touch.'
-EXT_LINKS = [('Wichtel-Rettung spielen', 'index')]
+EXT_LINKS = [('Wichtel-Rettung', 'index')]
 EXT_SETTINGS = []
 
 

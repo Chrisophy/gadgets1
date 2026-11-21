@@ -6,7 +6,7 @@
 EXT_ID = 'torten'
 EXT_NAME = 'Torten-Duell'
 EXT_DESCRIPTION = '🎂 Zwei Wichtel-Trupps werfen abwechselnd Torten aufeinander, mit Wind, Kratern im Gelände und Puddingsee. Wer satt ist, scheidet aus. Gegen den Computer oder zu zweit am Fernseher, Fernbedienung und Touch.'
-EXT_LINKS = [('Torten-Duell spielen', 'index')]
+EXT_LINKS = [('Torten-Duell', 'index')]
 EXT_SETTINGS = []
 
 
