@@ -331,18 +331,20 @@ function mainMenu(){mode='main';L=null;bar.innerHTML='';btns=[];$('#ht').textCon
  for(let i=0;i<LV.length;i++){if(unlocked(i)){const b=el('button','mb');b.innerHTML=(i+1)+'<small>'+stars(i)+'</small>';b.onclick=()=>{ui();loadLevel(i)};g.append(b);if((prog[i]||0)===0&&!first){first=1;fi=g.children.length-1}}else{const d=el('div','lock');d.textContent='🔒 '+(i+1);g.append(d)}}
  if(!first)fi=0;
  showOv('🧙 Wichtel-Rettung','Die Wichtel laufen von allein. Gib dem richtigen Wichtel eine Fähigkeit oder setze Bombe, Balken und Trampolin, damit alle zur Tür kommen. Fernbedienung: Pfeile bewegen das Fadenkreuz, OK wirkt, am unteren Rand erreichst du die Leiste. Touch: einfach antippen.',
-  [['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}],['Alle Level: '+(allOn?'an':'aus'),()=>{allOn=!allOn;save();mainMenu()}]],g,fi)}
-let trap=0,bk=0;
+  [['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}],['Alle Level: '+(allOn?'an':'aus'),()=>{allOn=!allOn;save();mainMenu()}],['🚪 Beenden',quit]],g,fi)}
+let trap=0,bk=0,quitting=0;
+function quit(){quitting=1;if(trap)history.back();else closeGame()}
 function pushTrap(){if(trap)return;try{history.pushState({wr:1},'');trap=1}catch(e){}}
 function closeGame(){try{if(window.parent!==window){window.parent.history.back();return}}catch(e){}if(history.length>1)history.back();else location.href='/ui/'}
 function resume(){ov.style.display='none';zone='field';mode='play';paused=false}
 addEventListener('popstate',()=>{if(!trap)return;trap=0;
+ if(quitting){closeGame();return}
  if(L&&mode!=='main'){pushTrap();if(Date.now()-bk<350)return;
   if(zone==='menu'){if(over)mainMenu();else if(mode==='pause')resume()}
   else if(zone==='bar'){zone='field';updBar()}
   else pauseMenu()}
  else closeGame()});
-function pauseMenu(){paused=true;showOv('Pause',L.n,[['▶ Weiter',resume],['🔄 Neu starten',()=>loadLevel(lv)],['☰ Level wählen',mainMenu],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();pauseMenu()}]])}
+function pauseMenu(){paused=true;showOv('Pause',L.n,[['▶ Weiter',resume],['🔄 Neu starten',()=>loadLevel(lv)],['☰ Level wählen',mainMenu],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();pauseMenu()}],['🚪 Beenden',quit]])}
 function endLv(win){over=win?'win':'lose';updBar();
  if(win){const k=saved===L.cnt?3:(saved>=Math.ceil(L.cnt*.8)?2:1);if(k>(prog[lv]||0)){prog[lv]=k;save()}SFX.win();for(let i=0;i<70;i++)ptc.push({x:Math.random()*W,y:-4-Math.random()*30,vx:(Math.random()-.5)*.8,vy:.3+Math.random()*.9,l:110,c:CONF[i%CONF.length]});
   const items=[];if(lv+1<LV.length)items.push(['▶ Nächstes Level',()=>loadLevel(lv+1)]);items.push(['🔄 Nochmal',()=>loadLevel(lv)],['☰ Level wählen',mainMenu]);

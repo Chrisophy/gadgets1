@@ -190,7 +190,7 @@ function step(){if(!G||G.over)return;tick++;
  hud()}
 function endTurn(){const a=alive(0).length,b=alive(1).length;
  if(!a||!b){G.over=1;G.winner=a?0:(b?1:-1);zone='menu';SFX.win();for(let i=0;i<80;i++)ptc.push({x:rnd()*W,y:-4-rnd()*30,vx:(rnd()-.5)*.8,vy:.3+rnd()*.9,l:120,c:['#ff5a5a','#ffd45a','#5ad2ff','#9be37a','#ff8ae6','#fff'][i%6]});
-  const t=G.winner<0?'Unentschieden!':'Team '+TEAMN[G.winner]+' gewinnt!';showOv('🎂 '+t,G.winner<0?'Beide sind pappsatt.':(cfg.cpu?(G.winner===0?'Du hast den Computer satt gemacht.':'Der Computer war diesmal besser.'):'Glückwunsch! Der andere Wichtel-Trupp ist pappsatt.'),[['▶ Nochmal',newGame],['☰ Menü',mainMenu]]);return}
+  const t=G.winner<0?'Unentschieden!':'Team '+TEAMN[G.winner]+' gewinnt!';showOv('🎂 '+t,G.winner<0?'Beide sind pappsatt.':(cfg.cpu?(G.winner===0?'Du hast den Computer satt gemacht.':'Der Computer war diesmal besser.'):'Glückwunsch! Der andere Wichtel-Trupp ist pappsatt.'),[['▶ Nochmal',newGame],['☰ Menü',mainMenu],['🚪 Beenden',quit]]);return}
  nextTurn(false)}
 function fx(){for(const p of ptc){p.x+=p.vx;p.y+=p.vy;p.vy+=.07;p.l--}ptc=ptc.filter(p=>p.l>0);for(const b of bub)b.t++;bub=bub.filter(b=>b.t<46);sh*=.82}
 function trace(o,ang,pow,list,shooter){const v=vel(ang,pow),p={x:o.x,y:o.y,vx:v.vx,vy:v.vy,age:0};for(let i=0;i<260;i++){const r=advance(p,list,shooter);if(r)return r.gone?{gone:1}:r}return{gone:1}}
@@ -215,11 +215,13 @@ function updBar(){if(!G)return;const t=G.team;btns.forEach((b,i)=>{b.classList.t
 function barFocus(i){bi=Math.max(0,Math.min(bbs.length-1,i));bbs.forEach((b,k)=>b.classList.toggle('f',zone==='bar'&&k===bi))}
 function enterBar(){if(!bbs.length||!G||G.over)return;zone='bar';held={};barFocus(G.phase==='aim'&&!isCpu(G.team)?G.wp[G.team]:3);say('Untere Leiste: Links/Rechts wählen, OK bestätigt, Zurück geht zurück zum Spiel')}
 function leaveBar(){zone='play';barFocus(0);bbs.forEach(b=>b.classList.remove('f'))}
-let trap=0,bk=0;
+let trap=0,bk=0,quitting=0;
+function quit(){quitting=1;if(trap)history.back();else closeGame()}
 function pushTrap(){if(trap)return;try{history.pushState({td:1},'');trap=1}catch(e){}}
 function closeGame(){try{if(window.parent!==window){window.parent.history.back();return}}catch(e){}if(history.length>1)history.back();else location.href='/ui/'}
 function resume(){ov.style.display='none';zone='play';paused=false;leaveBar()}
 addEventListener('popstate',()=>{if(!trap)return;trap=0;
+ if(quitting){closeGame();return}
  if(mode==='play'&&G){pushTrap();if(Date.now()-bk<350)return;
   if(zone==='menu'){if(paused)resume();else if(G.over)mainMenu()}else if(zone==='bar')leaveBar();else enterBar()}
  else closeGame()});
@@ -232,8 +234,8 @@ function showOv(title,msg,items,focusIdx){ov.innerHTML='';const h=el('h1');h.tex
 const LVN=['Leicht','Mittel','Schwer'];
 function mainMenu(){mode='main';paused=false;if(G&&!G.over)G.over=1;G=null;bar.innerHTML='';btns=[];$('#ht').textContent='Torten-Duell';$('#hs').textContent='';
  showOv('🎂 Torten-Duell','Zwei Wichtel-Trupps werfen abwechselnd Torten. Wer getroffen wird, verliert Appetit. Ist der Appetit weg, ist der Wichtel satt. Sind alle satt, hat der Trupp verloren. Fernbedienung: Links/Rechts Winkel, Hoch/Runter Kraft, OK wirft. Die Zurück-Taste öffnet die untere Leiste (Torte wählen, Pause). Touch: vom Wichtel wegziehen und loslassen.',
-  [['Gegen Computer: '+LVN[cfg.lvl],()=>{cfg.cpu=1;newGame()}],['Zu zweit (abwechselnd)',()=>{cfg.cpu=0;newGame()}],['Schwierigkeit: '+LVN[cfg.lvl],()=>{cfg.lvl=(cfg.lvl+1)%3;mainMenu()}],['Karte: '+MAPN[cfg.map],()=>{cfg.map=(cfg.map+1)%MAPN.length;mainMenu()}],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();mainMenu()}],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}]])}
-function pauseMenu(){if(!G||G.over||zone==='menu')return;bbs.forEach(b=>b.classList.remove('f'));paused=true;showOv('Pause','',[['▶ Weiter',resume],['🔄 Neue Karte',newGame],['☰ Hauptmenü',mainMenu],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();pauseMenu()}]])}
+  [['Gegen Computer: '+LVN[cfg.lvl],()=>{cfg.cpu=1;newGame()}],['Zu zweit (abwechselnd)',()=>{cfg.cpu=0;newGame()}],['Schwierigkeit: '+LVN[cfg.lvl],()=>{cfg.lvl=(cfg.lvl+1)%3;mainMenu()}],['Karte: '+MAPN[cfg.map],()=>{cfg.map=(cfg.map+1)%MAPN.length;mainMenu()}],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();mainMenu()}],['Ton: '+(snd?'an':'aus'),()=>{snd=!snd;save();mainMenu()}],['🚪 Beenden',quit]])}
+function pauseMenu(){if(!G||G.over||zone==='menu')return;bbs.forEach(b=>b.classList.remove('f'));paused=true;showOv('Pause','',[['▶ Weiter',resume],['🔄 Neue Karte',newGame],['☰ Hauptmenü',mainMenu],['Zielhilfe: '+(aid?'an':'aus'),()=>{aid=!aid;save();pauseMenu()}],['🚪 Beenden',quit]])}
 function navMenu(dir){if(!mbs.length)return;const cur_=mbs[mbi].getBoundingClientRect(),cxm=cur_.left+cur_.width/2,cym=cur_.top+cur_.height/2;let best=-1,bd=1e9;
  mbs.forEach((b,i)=>{if(i===mbi)return;const r=b.getBoundingClientRect(),x=r.left+r.width/2-cxm,y=r.top+r.height/2-cym;let pr,pe;
   if(dir==='ArrowRight'){pr=x;pe=Math.abs(y)}else if(dir==='ArrowLeft'){pr=-x;pe=Math.abs(y)}else if(dir==='ArrowDown'){pr=y;pe=Math.abs(x)}else{pr=-y;pe=Math.abs(x)}
